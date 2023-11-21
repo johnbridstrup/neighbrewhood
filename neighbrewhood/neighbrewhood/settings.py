@@ -44,6 +44,7 @@ DEFAULT_APPS = [
 CUSTOM_APPS = [
     'common',
     'brewers',
+    'brews',
 ]
 
 INSTALLED_APPS = DEFAULT_APPS + CUSTOM_APPS
