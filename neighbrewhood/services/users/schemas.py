@@ -23,6 +23,16 @@ class UserSchema(ModelSchema):
     # last_name: str = None
 
 
+class UserLimitedSchema(ModelSchema):
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "email",
+            "first_name",
+        ]
+
+
 class UserRegisterSchema(ModelSchema):
     class Meta:
         model = User
