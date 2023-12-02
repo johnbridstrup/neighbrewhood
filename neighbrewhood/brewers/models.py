@@ -12,3 +12,7 @@ class Brewer(CommonInfo):
     location = models.PointField()  ## Will not be displayed to other users
     phone_number = PhoneNumberField()
     can_claim = models.BooleanField(default=True)  ## Brewer makes claim, cant again until review
+
+    @property
+    def location_str(self):
+        return str(self.location)
