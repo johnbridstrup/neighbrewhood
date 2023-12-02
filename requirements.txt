@@ -1,4 +1,6 @@
 django
 django-cors-headers
+django-ninja
+django-ninja-jwt
 django-rest-framework
 psycopg2-binary

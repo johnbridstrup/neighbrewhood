@@ -39,6 +39,8 @@ DEFAULT_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'ninja_extra',
+    'ninja_jwt',
 ]
 
 CUSTOM_APPS = [
