@@ -49,6 +49,7 @@ CUSTOM_APPS = [
     'brews',
     'giveaways',
     'ratings',
+    'services.users',
 ]
 
 INSTALLED_APPS = DEFAULT_APPS + CUSTOM_APPS
