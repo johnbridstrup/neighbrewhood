@@ -1,3 +1,4 @@
+from collections import Iterable
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from django.test import TestCase
@@ -22,17 +23,32 @@ class ModelTestBase(TestCase):
             phone_number = "+15405551212",
         )
         brewer.save()
-        return brewer  
+        return brewer
+    
+    def create_brew_types(self, brew_types=("IPA",)):
+        if not isinstance(brew_types, Iterable):
+            brew_types = [brew_types]
+        brtype_objs = []
+        for bt in brew_types:
+            btype = BrewType(value=bt, creator=self.user)
+            btype.save()
+            brtype_objs.append(btype)
+        return brtype_objs
 
-    def create_brew(self, brewtype="IPA", qualities=("spicy",)):
-        btype = BrewType(value=brewtype, creator=self.user)
-        btype.save()
-
+    def create_qualities(self, qualities=("spicy",)):
+        if not isinstance(qualities, Iterable):
+            qualities = [qualities]
         qlty_objs = []
         for quality in qualities:
             q = Quality(value=quality, creator=self.user)
             q.save()
             qlty_objs.append(q)
+        return qlty_objs
+
+    def create_brew(self, brewtype="IPA", qualities=("spicy",)):
+        btype = self.create_brew_types(brewtype)[0]
+
+        qlty_objs = self.create_qualities(qualities)
         
         brew = Brew(
             creator=self.user,
