@@ -49,6 +49,7 @@ CUSTOM_APPS = [
     'brews',
     'giveaways',
     'ratings',
+    'services.brewservice',
     'services.users',
 ]
 

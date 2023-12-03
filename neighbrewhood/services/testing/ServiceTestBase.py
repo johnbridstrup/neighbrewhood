@@ -1,15 +1,18 @@
 # TestBase class for service tests
 from django.contrib.gis.geos import Point
-from django.test import TestCase, Client
+from django.test import Client
 from django.urls import reverse_lazy
 from requests.status_codes import codes
 
+from common.tests import ModelTestBase
 
-class ServiceTestBase(TestCase):
+
+class ServiceTestBase(ModelTestBase):
     CONTENT_TYPE = "application/json"
 
     def setUp(self):
-        self.username = "test"
+        super().setUp()
+        self.username = "service_tester"
         self.password = "Testing123!"
         self.email = "testing@test.com"
         self.first_name = "Test"
@@ -33,7 +36,7 @@ class ServiceTestBase(TestCase):
 
     def post(self, url, data, xtra_headers=None, auth=False):
         if xtra_headers is not None:
-            self.headers.update(xtra_headers, auth=False)
+            self.headers.update(xtra_headers)
         if auth:
             self.headers.update(self.access_header)
         return self._client.post(url, data=data, headers=self.headers, content_type=self.CONTENT_TYPE)

@@ -56,7 +56,7 @@ def brew(request, id_):
 @brew_router.post(
     "createBrew", 
     auth=JWTAuth(), 
-    response=BrewResponseSchema,
+    response={201: BrewResponseSchema},
     url_name="brew_create_brew",
 )
 def create_brew(request, brew: BrewCreateSchema):
@@ -74,4 +74,4 @@ def create_brew(request, brew: BrewCreateSchema):
     )
     brew.qualities.set(qualities)
     brew.save()
-    return brew
+    return 201, brew
