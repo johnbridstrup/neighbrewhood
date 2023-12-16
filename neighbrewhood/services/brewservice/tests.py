@@ -44,3 +44,7 @@ class BrewServiceTestCase(ServiceTestBase):
         r = self.post(create_brew_url, brew_data)
         self.assertEqual(r.status_code, codes.created)
 
+        my_brews_url = reverse_lazy("api-1.0.0:brew_my_brews")
+        r = self.get(my_brews_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertGreater(len(r.json()['items']), 0)

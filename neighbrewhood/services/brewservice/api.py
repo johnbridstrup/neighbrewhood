@@ -42,6 +42,16 @@ def brews(request):
     return Brew.objects.all()
 
 @brew_router.get(
+    "myBrews", 
+    auth=JWTAuth(), 
+    response=List[BrewResponseSchema],
+    url_name="brew_my_brews",
+)
+@paginate
+def my_brews(request):
+    return request.user.brew_creator.all()
+
+@brew_router.get(
     "brews/{id}", 
     auth=JWTAuth(), 
     response={200: BrewResponseSchema, codes_4xx: DefaultError},
