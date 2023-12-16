@@ -47,6 +47,7 @@ CUSTOM_APPS = [
     'common',
     'brewers',
     'brews',
+    'brewswaps',
     'giveaways',
     'ratings',
     'services.brewservice',
