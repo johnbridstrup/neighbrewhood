@@ -49,4 +49,5 @@ class BrewResponseSchema(ModelSchema):
             "start_date",
             "completion_date",
             "notes",
+            "id",
         ]

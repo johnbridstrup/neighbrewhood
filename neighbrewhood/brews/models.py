@@ -27,3 +27,8 @@ class Brew(CommonInfo):
     @property
     def brewer(self):
         return self.creator  ## TODO: FIX THIS. brewer should be a OneToOne with Brewer. creator and brewer can be different
+    
+    def is_brewed_by(self, user):
+        if self.creator == user:
+            return True
+        return False
