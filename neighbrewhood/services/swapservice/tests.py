@@ -1,4 +1,5 @@
 from datetime import date
+from django.contrib.gis.geos import Point
 from django.urls import reverse_lazy
 from requests.status_codes import codes
 from services.testing.ServiceTestBase import ServiceTestBase
@@ -16,7 +17,9 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.register_user()
         self.obtain_access_token()
     
-    def create_brewer(self):
+    def create_brewer(self, location=None):
+        if location:
+            self.brewer_details["location"] = location
         crt_brewer_url = reverse_lazy("api-1.0.0:users_create_brewer")
         return self.post(crt_brewer_url, self.brewer_details)
 
@@ -42,6 +45,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
 
     def test_create_swap_basic(self):
         r = self.create_brew()
+        self.create_brewer()
         brew_id = r.json()['id']
 
         crt_swap_url = reverse_lazy("api-1.0.0:brewswaps_create_swap")
@@ -53,3 +57,54 @@ class BrewSwapServiceTestCase(ServiceTestBase):
 
         r = self.post(crt_swap_url, swap_data)
         self.assertEqual(r.status_code, codes.created)
+
+        my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
+        r = self.get(my_swaps_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(len(r.json()), 1)
+    
+    def test_my_swaps(self):
+        # Create swap for one user
+        self.create_brewer()
+        r = self.create_brew()
+        
+        brew_id = r.json()["id"]
+        crt_swap_url = reverse_lazy("api-1.0.0:brewswaps_create_swap")
+        swap_data = {
+            "brew": brew_id,
+            "total_bottles": 24,
+            "max_increment": 12,
+        }
+        r = self.post(crt_swap_url, swap_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Check one swap exists for first user
+        my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
+        r = self.get(my_swaps_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(len(r.json()), 1)
+
+        # Create swap for another user
+        self.username = "another_user"
+        self.user_details["username"] = self.username
+        self.user_details["email"] = "another@user.com"
+
+        self.register_user()
+        self.obtain_access_token()
+        self.create_brewer()
+
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        swap_data = {
+            "brew": brew_id,
+            "total_bottles": 24,
+            "max_increment": 12,
+        }
+        r = self.post(crt_swap_url, swap_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Check one swap exists for second user
+        my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
+        r = self.get(my_swaps_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(len(r.json()), 1)

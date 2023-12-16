@@ -1,6 +1,8 @@
+from django.contrib.gis.geos import GEOSGeometry
 from ninja import Router
 from ninja.responses import codes_4xx
 from ninja_jwt.authentication import JWTAuth
+from typing import List
 
 from brews.models import Brew
 from brewswaps.models import BrewSwap
@@ -17,6 +19,10 @@ swap_router = Router(tags=["Brewers", "Brews", "Swaps"])
     url_name="brewswaps_create_swap",
 )
 def create_swap(request, swap: BrewSwapCreateSchema):
+    try:
+        request.user.brewer
+    except AttributeError:
+        return 404, {'detail': 'You must create a brewer profile first'}
     try:
         brew = Brew.objects.get(id=swap.brew)
     except Brew.DoesNotExist:
@@ -36,3 +42,12 @@ def create_swap(request, swap: BrewSwapCreateSchema):
     
     swap_obj.save()
     return 201, swap_obj
+
+@swap_router.get(
+    "mySwaps",
+    auth=JWTAuth(),
+    response={200: List[BrewSwapResponseSchema], codes_4xx: DefaultError},
+    url_name="brewswaps_my_swaps",
+)
+def my_swaps(request):
+    return 200, BrewSwap.objects.filter(creator=request.user).select_related("brew")
