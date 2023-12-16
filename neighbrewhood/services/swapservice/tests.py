@@ -44,8 +44,8 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         return r
 
     def test_create_swap_basic(self):
-        r = self.create_brew()
         self.create_brewer()
+        r = self.create_brew()
         brew_id = r.json()['id']
 
         crt_swap_url = reverse_lazy("api-1.0.0:brewswaps_create_swap")

@@ -7,6 +7,7 @@ from ninja_jwt.authentication import JWTAuth
 
 from common.schemas import DefaultError
 from brewers.models import Brewer
+from services.common.brewers_api import profile_required
 from .schemas import BrewerResponseSchema, CreateBrewerSchema, UserSchema, UserRegisterSchema
 
 
@@ -70,8 +71,6 @@ def create_brewer(request, brewer: CreateBrewerSchema):
     response={200: BrewerResponseSchema, codes_4xx: DefaultError},
     url_name="users_profile"
 )
+@profile_required
 def brewer_profile(request):
-    if not getattr(request.user, "brewer", True):
-        return 400, {'detail': "You have not created a profile"}
-    
     return request.user.brewer

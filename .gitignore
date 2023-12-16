@@ -56,3 +56,6 @@ drf_example
 # test db
 db.sqlite3
 **db.sqlite3
+
+# vscode
+.vscode

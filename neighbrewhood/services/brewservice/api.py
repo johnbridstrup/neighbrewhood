@@ -6,6 +6,7 @@ from typing import List
 
 from brews.models import Brew, BrewType, Quality
 from common.schemas import DefaultError
+from services.common.brewers_api import profile_required
 from .schemas import BrewCreateSchema, BrewResponseSchema, BrewTypeSchema, QualitySchema
 
 
@@ -47,6 +48,7 @@ def brews(request):
     response=List[BrewResponseSchema],
     url_name="brew_my_brews",
 )
+@profile_required
 @paginate
 def my_brews(request):
     return request.user.brew_creator.all()
@@ -66,13 +68,11 @@ def brew(request, id_):
 @brew_router.post(
     "createBrew", 
     auth=JWTAuth(), 
-    response={201: BrewResponseSchema},
+    response={201: BrewResponseSchema, codes_4xx: DefaultError},
     url_name="brew_create_brew",
 )
+@profile_required
 def create_brew(request, brew: BrewCreateSchema):
-    if not getattr(request.user, "brewer", True):
-        return 400, {'detail': "You have not created a profile"}
-    
     brew_type = BrewType.objects.get(id=brew.brew_type)
     qualities = Quality.objects.filter(id__in=brew.qualities)
     brew = Brew.objects.create(

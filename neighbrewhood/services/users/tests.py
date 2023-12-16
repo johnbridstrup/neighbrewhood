@@ -17,6 +17,14 @@ class UsersServicetestCase(ServiceTestBase):
 
         self.assertDictContainsSubset(me_r.json(), self.user_details)
 
+    def test_profile_required(self):
+        self.register_user()
+        self.obtain_access_token()
+        prof_url = reverse_lazy("api-1.0.0:users_profile")
+        prof_r = self.get(prof_url)
+        self.assertEqual(prof_r.status_code, codes.not_found)
+
+
     def test_create_brewer(self):
         self.register_user()
         self.obtain_access_token()
