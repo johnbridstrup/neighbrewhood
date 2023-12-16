@@ -22,10 +22,15 @@ class BrewSwapResponseSchema(ModelSchema):
     brew: BrewResponseSchema
     bottles_available: int
     creator: UserLimitedSchema
+    distance: float = None
 
     @staticmethod
     def resolve_bottles_available(obj):
         return obj.bottles_available
+    
+    @staticmethod
+    def resolve_distance(obj):
+        return float(obj.distance.m)
 
     class Meta:
         model = BrewSwap

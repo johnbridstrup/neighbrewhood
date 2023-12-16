@@ -18,8 +18,8 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.obtain_access_token()
     
     def create_brewer(self, location=None):
-        if location:
-            self.brewer_details["location"] = location
+        if location is not None:
+            self.brewer_details["location_str"] = location
         crt_brewer_url = reverse_lazy("api-1.0.0:users_create_brewer")
         return self.post(crt_brewer_url, self.brewer_details)
 
@@ -83,7 +83,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         r = self.get(my_swaps_url)
         self.assertEqual(r.status_code, codes.ok)
         self.assertEqual(len(r.json()), 1)
-
+        
         # Create swap for another user
         self.username = "another_user"
         self.user_details["username"] = self.username
@@ -108,3 +108,59 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         r = self.get(my_swaps_url)
         self.assertEqual(r.status_code, codes.ok)
         self.assertEqual(len(r.json()), 1)
+
+    def test_nearby_basic(self):
+        self.create_brewer()
+        r = self.create_brew()
+        
+        brew_id = r.json()["id"]
+        crt_swap_url = reverse_lazy("api-1.0.0:brewswaps_create_swap")
+        swap_data = {
+            "brew": brew_id,
+            "total_bottles": 24,
+            "max_increment": 12,
+        }
+        r = self.post(crt_swap_url, swap_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Create swap for another user far away
+        self.username = "far_away_user"
+        self.user_details["username"] = self.username
+        self.user_details["email"] = "another@user.com"
+
+        self.register_user()
+        self.obtain_access_token()
+
+        location = Point(80, -60, srid=4326) # Really far away
+        self.create_brewer(str(location))
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        swap_data = {
+            "brew": brew_id,
+            "total_bottles": 24,
+            "max_increment": 12,
+        }
+        r = self.post(crt_swap_url, swap_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Check total number of swaps
+        swp_url = reverse_lazy("api-1.0.0:brewswaps_swaps")
+        r = self.get(swp_url)
+        total = len(r.json())
+
+        # Create user near user 1
+        self.username = "nearby_user"
+        self.user_details["username"] = self.username
+        self.user_details["email"] = "another@user.com"
+
+        self.register_user()
+        self.obtain_access_token()
+        self.create_brewer(str(self.loc))
+
+        nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
+        r = self.get(nearby_url)
+        self.assertEqual(r.status_code, codes.ok)
+        nearby = len(r.json())
+
+        self.assertLess(nearby, total)
+        self.assertGreater(nearby, 0)
