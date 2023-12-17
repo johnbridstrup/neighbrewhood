@@ -9,7 +9,7 @@ from ninja_jwt.authentication import JWTAuth
 from typing import List
 
 from brews.models import Brew
-from brewswaps.models import BrewSwap
+from brewswaps.models import BrewSwap, BrewSwapStatusChoices
 from common.schemas import DefaultError, DefaultSuccess
 from services.common.brewers_api import profile_required
 from .schemas import (
@@ -91,7 +91,7 @@ def nearby_swaps(request, location: str = None, within: int = None):
     if not within:
         within = 20 # Default to within 20 miles
 
-    query = BrewSwap.objects.filter(~Q(creator=request.user))
+    query = BrewSwap.objects.filter(~Q(creator=request.user), status=BrewSwapStatusChoices.LIVE)
     query = query.filter(creator__brewer__location__distance_lte=(location, D(mi=within)))
     query = query.annotate(distance=Distance("creator__brewer__location", location)).order_by("distance")
     query = query.select_related("brew")
@@ -114,6 +114,7 @@ def swap_detail(request, swap_id: int):
     return swap
 
 # Detail actions
+
 @swap_router.get(
     "{swap_id}/set_live",
     auth=JWTAuth(),

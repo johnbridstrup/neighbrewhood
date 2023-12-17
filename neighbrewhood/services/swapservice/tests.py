@@ -145,6 +145,13 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         r = self.post(crt_swap_url, swap_data)
         self.assertEqual(r.status_code, codes.created)
 
+        # Set live
+        swap = r.json()
+        det_url = swap["detail"]["url"]
+        r = self.get(det_url)
+        setlive_url = r.json()["actions"]["set_live"]["url"]
+        self.get(setlive_url)
+
         # Create swap for another user far away
         self.username = "far_away_user"
         self.user_details["username"] = self.username
@@ -164,6 +171,13 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         }
         r = self.post(crt_swap_url, swap_data)
         self.assertEqual(r.status_code, codes.created)
+
+        # Set live
+        swap = r.json()
+        det_url = swap["detail"]["url"]
+        r = self.get(det_url)
+        setlive_url = r.json()["actions"]["set_live"]["url"]
+        self.get(setlive_url)
 
         # Check total number of swaps
         swp_url = reverse_lazy("api-1.0.0:brewswaps_swaps")
