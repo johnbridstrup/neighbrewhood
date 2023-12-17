@@ -10,12 +10,18 @@ from typing import List
 
 from brews.models import Brew
 from brewswaps.models import BrewSwap
-from common.schemas import DefaultError
+from common.schemas import DefaultError, DefaultSuccess
 from services.common.brewers_api import profile_required
-from .schemas import BrewSwapCreateSchema, BrewSwapResponseSchema
+from .schemas import (
+    BrewSwapCreateSchema,
+    BrewSwapResponseSchema,
+    BrewSwapDetailResponseSchema,
+)
 
 
-swap_router = Router(tags=["Brewers", "Brews", "Swaps"])
+swap_router = Router(tags=["Brewers", "Swaps"])
+
+# Create 
 
 @swap_router.post(
     "createSwap", 
@@ -43,6 +49,8 @@ def create_swap(request, swap: BrewSwapCreateSchema):
     
     swap_obj.save()
     return 201, swap_obj
+
+# Retrieve (List)
 
 @swap_router.get(
     "swaps",
@@ -88,3 +96,77 @@ def nearby_swaps(request, location: str = None, within: int = None):
     query = query.annotate(distance=Distance("creator__brewer__location", location)).order_by("distance")
     query = query.select_related("brew")
     return 200, query
+
+# Retrieve (detail)
+
+@swap_router.get(
+    "{swap_id}",
+    auth=JWTAuth(),
+    response={200: BrewSwapDetailResponseSchema, codes_4xx: DefaultError},
+    url_name="brewswaps_detail",
+)
+@profile_required
+def swap_detail(request, swap_id: int):
+    try:
+        swap = BrewSwap.objects.get(id=swap_id)
+    except BrewSwap.DoesNotExist:
+        return 400, {"detail": f"This swap (id: {swap_id}) does not exist"}
+    return swap
+
+# Detail actions
+@swap_router.get(
+    "{swap_id}/set_live",
+    auth=JWTAuth(),
+    response={200: DefaultSuccess, codes_4xx: DefaultError},
+    url_name="brewswaps_set_live",
+)
+@profile_required
+def set_swap_live(request, swap_id: int):
+    try:
+        swap = BrewSwap.objects.get(id=swap_id)
+    except BrewSwap.DoesNotExist:
+        return 400, {"detail": f"This swap (id: {swap_id}) does not exist"}
+    
+    if not swap.creator == request.user:
+        return 403, {"detail": "You do not own this swap"}
+    
+    msg = swap.set_live()
+    return 200, {"message": msg}
+
+@swap_router.get(
+    "{swap_id}/set_complete",
+    auth=JWTAuth(),
+    response={200: DefaultSuccess, codes_4xx: DefaultError},
+    url_name="brewswaps_set_complete",
+)
+@profile_required
+def set_swap_complete(request, swap_id: int):
+    try:
+        swap = BrewSwap.objects.get(id=swap_id)
+    except BrewSwap.DoesNotExist:
+        return 400, {"detail": f"This swap (id: {swap_id}) does not exist"}
+    
+    if not swap.creator == request.user:
+        return 403, {"detail": "You do not own this swap"}
+    
+    msg = swap.set_complete()
+    return 200, {"message": msg}
+
+@swap_router.get(
+    "{swap_id}/set_inactive",
+    auth=JWTAuth(),
+    response={200: DefaultSuccess, codes_4xx: DefaultError},
+    url_name="brewswaps_set_inactive",
+)
+@profile_required
+def set_swap_inactive(request, swap_id: int):
+    try:
+        swap = BrewSwap.objects.get(id=swap_id)
+    except BrewSwap.DoesNotExist:
+        return 400, {"detail": f"This swap (id: {swap_id}) does not exist"}
+    
+    if not swap.creator == request.user:
+        return 403, {"detail": "You do not own this swap"}
+    
+    msg = swap.set_inactive()
+    return 200, {"message": msg}

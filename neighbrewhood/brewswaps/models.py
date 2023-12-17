@@ -5,7 +5,7 @@ from common.models import CommonInfo
 
 
 class BrewSwapStatusChoices(models.TextChoices):
-    Live = "Live"
+    LIVE = "Live"
     COMPLETE = "Complete"
     INACTIVE = "Inactive"
 
@@ -30,12 +30,20 @@ class BrewSwap(CommonInfo):
             return self.total_bottles
         return self.total_bottles - claimed
     
+    @property
+    def is_live(self):
+        return self.status == BrewSwapStatusChoices.LIVE
+    
     def set_live(self):
-        if self.status == BrewSwapStatusChoices.Live:
+        if self.status == BrewSwapStatusChoices.LIVE:
             return "Swap is already live"
         self.status = BrewSwapStatusChoices.LIVE
         self.save()
         return "Swap is now active"
+    
+    @property
+    def is_inactive(self):
+        return self.status == BrewSwapStatusChoices.INACTIVE
     
     def set_inactive(self):
         if not self.status == BrewSwapStatusChoices.INACTIVE:
@@ -43,6 +51,10 @@ class BrewSwap(CommonInfo):
         self.status = BrewSwapStatusChoices.INACTIVE
         self.save()
         return "Swap is now inactive"
+    
+    @property
+    def is_complete(self):
+        return self.status == BrewSwapStatusChoices.COMPLETE
 
     def set_complete(self):
         if not self.status == BrewSwapStatusChoices.COMPLETE:

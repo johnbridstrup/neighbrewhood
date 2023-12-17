@@ -2,6 +2,7 @@ from datetime import date
 from django.contrib.gis.geos import Point
 from django.urls import reverse_lazy
 from requests.status_codes import codes
+from brewswaps.models import BrewSwapStatusChoices
 from services.testing.ServiceTestBase import ServiceTestBase
 
 
@@ -62,6 +63,27 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         r = self.get(my_swaps_url)
         self.assertEqual(r.status_code, codes.ok)
         self.assertEqual(len(r.json()), 1)
+
+        # SET ACTIVE
+        swap = r.json()
+
+        # Select a swap
+        det_url = swap[0]["detail"]["url"]
+
+        # View the swap 
+        r = self.get(det_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(r.json()["status"], BrewSwapStatusChoices.INACTIVE)
+
+        # Set live
+        setlive_url = r.json()["actions"]["set_live"]["url"]
+        r = self.get(setlive_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Verify
+        r = self.get(det_url)
+        self.assertEqual(r.json()["status"], BrewSwapStatusChoices.LIVE)
+
     
     def test_my_swaps(self):
         # Create swap for one user
