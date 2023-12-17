@@ -53,7 +53,7 @@ def create_swap(request, swap: BrewSwapCreateSchema):
 # Retrieve (List)
 
 @swap_router.get(
-    "swaps",
+    "",
     auth=JWTAuth(),
     response={200: List[BrewSwapResponseSchema], codes_4xx: DefaultError},
     url_name="brewswaps_swaps",

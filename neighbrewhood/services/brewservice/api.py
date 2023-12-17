@@ -33,7 +33,7 @@ def qualities(request):
     return Quality.objects.all()
 
 @brew_router.get(
-    "brews", 
+    "", 
     auth=JWTAuth(), 
     response=List[BrewResponseSchema],
     url_name="brew_brews",
