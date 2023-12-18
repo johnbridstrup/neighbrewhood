@@ -9,17 +9,23 @@ from ninja_jwt.authentication import JWTAuth
 from typing import List
 
 from brews.models import Brew
-from brewswaps.models import BrewSwap, BrewSwapStatusChoices
+from brewswaps.models import BrewSwap, BrewSwapStatusChoices, SwapClaim
 from common.schemas import DefaultError, DefaultSuccess
 from services.common.brewers_api import profile_required
 from .schemas import (
     BrewSwapCreateSchema,
     BrewSwapResponseSchema,
     BrewSwapDetailResponseSchema,
+    SwapClaimCreateSchema,
+    SwapClaimResponseSchema,
 )
 
 
 swap_router = Router(tags=["Brewers", "Swaps"])
+
+#############################
+# BrewSwaps Interface
+#############################
 
 # Create 
 
@@ -171,3 +177,43 @@ def set_swap_inactive(request, swap_id: int):
     
     msg = swap.set_inactive()
     return 200, {"message": msg}
+
+#############################
+# SwapClaims Interface
+#############################
+
+@swap_router.post(
+    "{swap_id}/claim",
+    auth=JWTAuth(),
+    response={201: SwapClaimResponseSchema, codes_4xx: DefaultError},
+    url_name="brewswaps_claim",
+)
+@profile_required
+def swap_claim(request, swap_id: int, claim: SwapClaimCreateSchema):
+    try:
+        brew = Brew.objects.get(id=claim.brew)
+    except Brew.DoesNotExist:
+        return 404, {"detail": f"Brew {claim.brew} does not exist"}   
+    if request.user != brew.creator:
+        return 403, {"detail", "You can't claim with a brew you don't own"}
+    
+    try:
+        swap = BrewSwap.objects.get(id=swap_id)
+    except BrewSwap.DoesNotExist:
+        return 404, {"detail": f"BrewSwap {swap_id} doesn't exist"}
+    if request.user == swap.creator:
+        return 403, {"detail": "You can't claim your own swap"}
+    if swap.bottles_available == 0:
+        return 400, {"detail": "There are no bottles remaining, check back later."}
+    
+    if claim.num_bottles > swap.bottles_available:
+        return 400, {"detail": f"Only {swap.bottles_available} left"}
+    
+    claim = SwapClaim.objects.create(
+        creator=request.user,
+        brew=brew,
+        swap=swap,
+        num_bottles=claim.num_bottles,
+    )
+
+    return 201, claim

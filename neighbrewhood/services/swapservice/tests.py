@@ -1,8 +1,10 @@
+import jsonschema
+
 from datetime import date
 from django.contrib.gis.geos import Point
 from django.urls import reverse_lazy
 from requests.status_codes import codes
-from brewswaps.models import BrewSwapStatusChoices
+from brewswaps.models import BrewSwapStatusChoices, ClaimStatusChoices
 from services.testing.ServiceTestBase import ServiceTestBase
 
 
@@ -200,3 +202,28 @@ class BrewSwapServiceTestCase(ServiceTestBase):
 
         self.assertLess(nearby, total)
         self.assertGreater(nearby, 0)
+
+        # Make a claim 0: Choose a swap
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        claim_url = r.json()["actions"]["make_claim"]["url"]
+        claim_schema = r.json()["actions"]["make_claim"]["schema"]
+
+        # Make a claim 1: create brew
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        
+        # Make a claim 2: submit claim on swap
+        claim_data = {
+            "brew": brew_id,
+            "num_bottles": 6,
+        }
+        try:
+            jsonschema.validate(claim_data, claim_schema)
+        except jsonschema.ValidationError as e:
+            assert False, str(e)
+
+        r = self.post(claim_url, claim_data)
+
+        self.assertEqual(r.status_code, codes.created)
+        self.assertEqual(r.json()["status"], ClaimStatusChoices.PENDING)

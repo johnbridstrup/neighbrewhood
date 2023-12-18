@@ -2,7 +2,7 @@ from typing import Dict
 from django.urls import reverse_lazy
 from ninja import ModelSchema
 
-from brewswaps.models import BrewSwap
+from brewswaps.models import BrewSwap, SwapClaim
 from common.schemas import ActionUrlSchema, HttpMethod, make_action
 from services.brewservice.schemas import BrewResponseSchema
 from services.users.schemas import UserLimitedSchema
@@ -65,4 +65,35 @@ class BrewSwapDetailResponseSchema(BrewSwapResponseSchema):
                 "set_live": make_action(HttpMethod.GET, str(setlive_url)),
                 "set_complete": make_action(HttpMethod.GET, str(setcomplete_url)),
             }
-        return 
+        claim_url = reverse_lazy("api-1.0.0:brewswaps_claim", args=[obj.id])
+        return {
+            "make_claim": make_action(HttpMethod.POST, str(claim_url), SwapClaimCreateSchema.json_schema())
+        }
+    
+
+## Claims
+    
+class SwapClaimCreateSchema(ModelSchema):
+    brew: int
+
+    class Meta:
+        model = SwapClaim
+        fields = [
+            "brew",
+            "num_bottles",
+        ]
+
+    
+class SwapClaimResponseSchema(ModelSchema):
+    brew: BrewResponseSchema
+    swap: BrewSwapResponseSchema
+    creator: UserLimitedSchema
+    class Meta:
+        model = SwapClaim
+        fields = [
+            "brew",
+            "swap",
+            "num_bottles",
+            "status",
+            "creator"
+        ]
