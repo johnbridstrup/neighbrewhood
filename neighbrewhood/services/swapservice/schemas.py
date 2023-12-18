@@ -27,6 +27,7 @@ class BrewSwapResponseSchema(ModelSchema):
     creator: UserLimitedSchema
     distance: float = None
     detail: ActionUrlSchema
+    claims: int
 
     @staticmethod
     def resolve_bottles_available(obj):
@@ -40,6 +41,13 @@ class BrewSwapResponseSchema(ModelSchema):
     def resolve_detail(obj):
         url = reverse_lazy("api-1.0.0:brewswaps_detail", args=[obj.id])
         return make_action(HttpMethod.GET, str(url))
+    
+    @staticmethod
+    def resolve_claims(obj):
+        claims = getattr(obj, "claims", None)
+        if claims is not None:
+            return claims.count()
+        return 0
 
     class Meta:
         model = BrewSwap
@@ -61,14 +69,19 @@ class BrewSwapDetailResponseSchema(BrewSwapResponseSchema):
         if request.user == obj.creator:
             setlive_url = reverse_lazy("api-1.0.0:brewswaps_set_live", args=[obj.id])
             setcomplete_url = reverse_lazy("api-1.0.0:brewswaps_set_complete", args=[obj.id])
-            return {
+            ret = {
                 "set_live": make_action(HttpMethod.GET, str(setlive_url)),
                 "set_complete": make_action(HttpMethod.GET, str(setcomplete_url)),
+                
             }
-        claim_url = reverse_lazy("api-1.0.0:brewswaps_claim", args=[obj.id])
-        return {
-            "make_claim": make_action(HttpMethod.POST, str(claim_url), SwapClaimCreateSchema.json_schema())
-        }
+        else:
+            make_claim_url = reverse_lazy("api-1.0.0:brewswaps_claim", args=[obj.id])
+            ret = {
+                "make_claim": make_action(HttpMethod.POST, str(make_claim_url), SwapClaimCreateSchema.json_schema())
+            }
+        claims_url = reverse_lazy("api-1.0.0:brewswaps_claims", args=[obj.id])
+        ret["get_claims"] = make_action(HttpMethod.GET, str(claims_url))
+        return ret
     
 
 ## Claims
@@ -88,6 +101,18 @@ class SwapClaimResponseSchema(ModelSchema):
     brew: BrewResponseSchema
     swap: BrewSwapResponseSchema
     creator: UserLimitedSchema
+    actions: Dict[str, ActionUrlSchema] = None
+
+    @staticmethod
+    def resolve_actions(obj, context):
+        request = context["request"]
+        if request.user != obj.creator:
+            accept_url = reverse_lazy("api-1.0.0:brewswaps_accept_claim", args=[obj.swap.id, obj.id])
+            return {
+                "accept": make_action(HttpMethod.GET, str(accept_url))
+            }
+        return {}
+
     class Meta:
         model = SwapClaim
         fields = [

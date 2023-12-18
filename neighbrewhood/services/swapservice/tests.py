@@ -155,6 +155,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.get(setlive_url)
 
         # Create swap for another user far away
+        orig_username = self.username
         self.username = "far_away_user"
         self.user_details["username"] = self.username
         self.user_details["email"] = "another@user.com"
@@ -227,3 +228,31 @@ class BrewSwapServiceTestCase(ServiceTestBase):
 
         self.assertEqual(r.status_code, codes.created)
         self.assertEqual(r.json()["status"], ClaimStatusChoices.PENDING)
+
+        # Orig user views and accepts swap
+        self.username = orig_username
+        self.obtain_access_token()
+
+        # View my swaps
+        my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
+        r = self.get(my_swaps_url)
+        self.assertEqual(r.json()[0]["claims"], 1)
+
+        # Get detail for one of them
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        
+        # See claims
+        get_claims_url = r.json()["actions"]["get_claims"]["url"]
+        r = self.get(get_claims_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Accept claim
+        accept_url = r.json()[0]["actions"]["accept"]["url"]
+        r = self.get(accept_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Verify accepted
+        r = self.get(get_claims_url)
+        claim = r.json()[0]
+        self.assertEqual(claim["status"], ClaimStatusChoices.ACCEPTED)

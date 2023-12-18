@@ -217,3 +217,50 @@ def swap_claim(request, swap_id: int, claim: SwapClaimCreateSchema):
     )
 
     return 201, claim
+
+@swap_router.get(
+    "{swap_id}/claims",
+    auth=JWTAuth(),
+    response={
+        200: List[SwapClaimResponseSchema],
+        204: DefaultSuccess, 
+        codes_4xx: DefaultError,
+    },
+    url_name="brewswaps_claims",
+)
+@profile_required
+def swap_claims(request, swap_id: int):
+    swap = BrewSwap.objects.get(id=swap_id)
+    claims = getattr(swap, "claims", None)
+    if claims is None:
+        return 204, {"message": "No claims currently"}
+    return 200, claims
+
+@swap_router.get(
+    "{swap_id}/claims/{claim_id}/accept",
+    auth=JWTAuth(),
+    response={200: DefaultSuccess, codes_4xx: DefaultError},
+    url_name="brewswaps_accept_claim",
+)
+@profile_required
+def accept_claim(request, swap_id, claim_id):
+    try:
+        swap = BrewSwap.objects.get(id=swap_id)
+    except BrewSwap.DoesNotExist:
+        return 404, {"detail": f"Swap {swap_id} does not exist"}
+    if request.user != swap.creator:
+        return 403, {"detail": "You can't accept a claim for a swap you didn't create"}
+    if swap.bottles_available == 0:
+        return 400, {"details": "Can't accept, no bottles remaining"}
+    
+    try:
+        claim = SwapClaim.objects.get(id=claim_id)
+    except SwapClaim.DoesNotExist:
+        return 404, {"detail": f"Claim {claim_id} does not exist"}
+    if request.user == claim.creator:
+        return 403, {"detail": "You can't accept your own claim"}
+    if swap.bottles_available < claim.num_bottles:
+        return 400, {"detail": "Not enough bottles available"}
+
+    msg = claim.accept()
+    return 200, {"message": msg}

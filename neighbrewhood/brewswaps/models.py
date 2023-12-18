@@ -46,7 +46,7 @@ class BrewSwap(CommonInfo):
         return self.status == BrewSwapStatusChoices.INACTIVE
     
     def set_inactive(self):
-        if not self.status == BrewSwapStatusChoices.INACTIVE:
+        if self.status == BrewSwapStatusChoices.INACTIVE:
             return "Swap is already inactive"
         self.status = BrewSwapStatusChoices.INACTIVE
         self.save()
@@ -57,7 +57,7 @@ class BrewSwap(CommonInfo):
         return self.status == BrewSwapStatusChoices.COMPLETE
 
     def set_complete(self):
-        if not self.status == BrewSwapStatusChoices.COMPLETE:
+        if self.status == BrewSwapStatusChoices.COMPLETE:
             return "Swap is already complete"
         self.status = BrewSwapStatusChoices.COMPLETE
         self.save()
@@ -69,3 +69,17 @@ class SwapClaim(CommonInfo):
     swap = models.ForeignKey(BrewSwap, on_delete=models.SET_NULL, null=True, blank=True, related_name="claims")
     num_bottles = models.IntegerField()
     status = models.TextField(choices=ClaimStatusChoices.choices, default=ClaimStatusChoices.PENDING)
+
+    def accept(self):
+        if self.status == ClaimStatusChoices.ACCEPTED:
+            return "Claim already accepted"
+        self.status = ClaimStatusChoices.ACCEPTED
+        self.save()
+        return "Claim accepted"
+    
+    def reject(self):
+        if self.status == ClaimStatusChoices.REJECTED:
+            return "Claim already rejected"
+        self.status = ClaimStatusChoices.REJECTED
+        self.save()
+        return "Claim rejected"
