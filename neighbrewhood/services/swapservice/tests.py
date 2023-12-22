@@ -231,3 +231,190 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         r = self.get(get_claims_url)
         claim = r.json()[0]
         self.assertEqual(claim["status"], ClaimStatusChoices.ACCEPTED)
+
+    def test_not_enough_bottles(self):
+        # create and set live
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        total_bottles = 8
+        max_inc = 5
+        self.assertGreater(2*max_inc, total_bottles) # Just in case I forget...
+
+        r = self.create_swap(brew_id, total_bottles=total_bottles, max_increment=max_inc)
+        self.assertEqual(r.status_code, codes.created)
+
+        swap = r.json()
+        det_url = swap["detail"]["url"]
+        r = self.get(det_url)
+        setlive_url = r.json()["actions"]["set_live"]["url"]
+        self.get(setlive_url)
+
+        ## User 1 claims
+        user1 = "user1"
+        user1_email = "another@user.com"
+
+        self.register_user(username=user1, email=user1_email)
+        self.obtain_access_token(username=user1)
+        self.create_brewer(str(self.loc))
+
+        # get nearby
+        nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
+        r = self.get(nearby_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Choose and claim
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        claim_url = r.json()["actions"]["make_claim"]["url"]
+
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        
+        claim_data = {
+            "brew": brew_id,
+            "num_bottles": max_inc,
+        }
+        r = self.post(claim_url, claim_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Claim accepted
+        self.obtain_access_token()
+        my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
+        r = self.get(my_swaps_url)
+        self.assertEqual(r.json()[0]["claims"], 1)
+
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        
+        get_claims_url = r.json()["actions"]["get_claims"]["url"]
+        r = self.get(get_claims_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        accept_url = r.json()[0]["actions"]["accept"]["url"]
+        r = self.get(accept_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # User 2 tries to claim more than remaining
+        user2 = "user2"
+        user2_email = "another@user.com"
+
+        self.register_user(username=user2, email=user2_email)
+        self.obtain_access_token(username=user2)
+        self.create_brewer(str(self.loc))
+
+        # get nearby
+        nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
+        r = self.get(nearby_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Choose and claim
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        claim_url = r.json()["actions"]["make_claim"]["url"]
+
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        
+        claim_data = {
+            "brew": brew_id,
+            "num_bottles": max_inc, # there should not be 5 remaining
+        }
+        r = self.post(claim_url, claim_data)
+        self.assertEqual(r.status_code, codes.bad)
+        self.assertEqual(r.json()["detail"], f"Only {total_bottles-max_inc} left")
+
+    def test_cant_accept_over_max(self):
+        r = self.create_brew()
+        total_bottles = 8
+        max_inc = 5
+        self.assertGreater(2*max_inc, total_bottles) # Just in case I forget...
+        
+        brew_id = r.json()["id"]
+        r = self.create_swap(brew_id, total_bottles, max_inc)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Set live
+        swap = r.json()
+        det_url = swap["detail"]["url"]
+        r = self.get(det_url)
+        setlive_url = r.json()["actions"]["set_live"]["url"]
+        self.get(setlive_url)
+
+        ## User 1 claims
+        user1 = "user1"
+        user1_email = "another@user.com"
+
+        self.register_user(username=user1, email=user1_email)
+        self.obtain_access_token(username=user1)
+        self.create_brewer(str(self.loc))
+
+        # get nearby
+        nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
+        r = self.get(nearby_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Choose and claim
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        claim_url = r.json()["actions"]["make_claim"]["url"]
+
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        
+        claim_data = {
+            "brew": brew_id,
+            "num_bottles": max_inc,
+        }
+        r = self.post(claim_url, claim_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # User 2 tries to claim more than remaining
+        user2 = "user2"
+        user2_email = "another@user.com"
+
+        self.register_user(username=user2, email=user2_email)
+        self.obtain_access_token(username=user2)
+        self.create_brewer(str(self.loc))
+
+        # get nearby
+        nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
+        r = self.get(nearby_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Choose and claim
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        claim_url = r.json()["actions"]["make_claim"]["url"]
+
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        
+        claim_data = {
+            "brew": brew_id,
+            "num_bottles": max_inc,
+        }
+        r = self.post(claim_url, claim_data)
+
+        # Try to accept both
+        self.obtain_access_token()
+        my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
+        r = self.get(my_swaps_url)
+        self.assertEqual(r.json()[0]["claims"], 2)
+
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        get_claims_url = r.json()["actions"]["get_claims"]["url"]
+        r = self.get(get_claims_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(len(r.json()), 2)
+
+        # First claim should work
+        accept_url_1 = r.json()[0]["actions"]["accept"]["url"]
+        acc_r_1 = self.get(accept_url_1)
+        self.assertEqual(acc_r_1.status_code, codes.ok) # works
+
+        # Second claim should not
+        accept_url_2 = r.json()[1]["actions"]["accept"]["url"]
+        acc_r_2 = self.get(accept_url_2)
+        self.assertEqual(acc_r_2.status_code, codes.bad)
+        self.assertEqual(acc_r_2.json()["detail"], "Not enough bottles available")
