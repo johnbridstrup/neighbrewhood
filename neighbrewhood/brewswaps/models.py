@@ -14,6 +14,7 @@ class ClaimStatusChoices(models.TextChoices):
     PENDING = "Pending"
     ACCEPTED = "Accepted"
     REJECTED = "Rejected"
+    CANCELED = "Canceled"
 
 class BrewSwap(CommonInfo):
     MAX_BOTTLES = 100  # This is mostly troll prevention
@@ -83,3 +84,10 @@ class SwapClaim(CommonInfo):
         self.status = ClaimStatusChoices.REJECTED
         self.save()
         return "Claim rejected"
+    
+    def cancel(self):
+        if self.status == ClaimStatusChoices.CANCELED:
+            return "Claim already cancelled"
+        self.status = ClaimStatusChoices.CANCELED
+        self.save()
+        return "Claim canceled"

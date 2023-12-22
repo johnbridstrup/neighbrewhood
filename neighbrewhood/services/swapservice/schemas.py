@@ -69,10 +69,11 @@ class BrewSwapDetailResponseSchema(BrewSwapResponseSchema):
         if request.user == obj.creator:
             setlive_url = reverse_lazy("api-1.0.0:brewswaps_set_live", args=[obj.id])
             setcomplete_url = reverse_lazy("api-1.0.0:brewswaps_set_complete", args=[obj.id])
+            setinactive_url = reverse_lazy("api-1.0.0:brewswaps_set_inactive", args=[obj.id])
             ret = {
                 "set_live": make_action(HttpMethod.GET, str(setlive_url)),
                 "set_complete": make_action(HttpMethod.GET, str(setcomplete_url)),
-                
+                "set_inactive": make_action(HttpMethod.GET, str(setinactive_url)),
             }
         else:
             make_claim_url = reverse_lazy("api-1.0.0:brewswaps_claim", args=[obj.id])
@@ -110,6 +111,11 @@ class SwapClaimResponseSchema(ModelSchema):
             accept_url = reverse_lazy("api-1.0.0:brewswaps_accept_claim", args=[obj.swap.id, obj.id])
             return {
                 "accept": make_action(HttpMethod.GET, str(accept_url))
+            }
+        else:
+            cancel_url = reverse_lazy("api-1.0.0:brewswaps_cancel_claim", args=[obj.swap.id, obj.id])
+            return {
+                "cancel": make_action(HttpMethod.GET, str(cancel_url))
             }
         return {}
 

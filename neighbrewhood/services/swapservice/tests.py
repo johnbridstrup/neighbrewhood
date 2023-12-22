@@ -418,3 +418,50 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         acc_r_2 = self.get(accept_url_2)
         self.assertEqual(acc_r_2.status_code, codes.bad)
         self.assertEqual(acc_r_2.json()["detail"], "Not enough bottles available")
+
+    def test_cancel_claim(self):
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        r = self.create_swap(brew_id)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Set live
+        swap = r.json()
+        det_url = swap["detail"]["url"]
+        r = self.get(det_url)
+        setlive_url = r.json()["actions"]["set_live"]["url"]
+        self.get(setlive_url)
+
+        ## User 1 claims
+        user1 = "user1"
+        user1_email = "another@user.com"
+
+        self.register_user(username=user1, email=user1_email)
+        self.obtain_access_token(username=user1)
+        self.create_brewer(str(self.loc))
+
+        # get nearby
+        nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
+        r = self.get(nearby_url)
+        self.assertEqual(r.status_code, codes.ok)
+
+        # Choose and claim
+        det_url = r.json()[0]["detail"]["url"]
+        r = self.get(det_url)
+        claim_url = r.json()["actions"]["make_claim"]["url"]
+
+        r = self.create_brew()
+        brew_id = r.json()["id"]
+        
+        claim_data = {
+            "brew": brew_id,
+            "num_bottles": 5,
+        }
+        r = self.post(claim_url, claim_data)
+        self.assertEqual(r.status_code, codes.created)
+
+        # Cancel the claim
+        cancel_url = r.json()["actions"]["cancel"]["url"]
+        r = self.get(cancel_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(r.json()["message"], "Claim canceled")

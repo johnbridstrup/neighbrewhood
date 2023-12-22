@@ -9,7 +9,12 @@ from ninja_jwt.authentication import JWTAuth
 from typing import List
 
 from brews.models import Brew
-from brewswaps.models import BrewSwap, BrewSwapStatusChoices, SwapClaim
+from brewswaps.models import (
+    BrewSwap, 
+    BrewSwapStatusChoices,
+    ClaimStatusChoices,
+    SwapClaim,
+)
 from common.schemas import DefaultError, DefaultSuccess
 from services.common.brewers_api import profile_required
 from .schemas import (
@@ -236,6 +241,7 @@ def swap_claims(request, swap_id: int):
         return 204, {"message": "No claims currently"}
     return 200, claims
 
+# TODO: move these into a separate router
 @swap_router.get(
     "{swap_id}/claims/{claim_id}/accept",
     auth=JWTAuth(),
@@ -259,8 +265,28 @@ def accept_claim(request, swap_id, claim_id):
         return 404, {"detail": f"Claim {claim_id} does not exist"}
     if request.user == claim.creator:
         return 403, {"detail": "You can't accept your own claim"}
+    if claim.status == ClaimStatusChoices.CANCELED:
+        return 400, {"detail": "This claim has already been canceled by the creator"}
     if swap.bottles_available < claim.num_bottles:
         return 400, {"detail": "Not enough bottles available"}
 
     msg = claim.accept()
+    return 200, {"message": msg}
+
+@swap_router.get(
+    "{swap_id}/claims/{claim_id}/cancel",
+    auth=JWTAuth(),
+    response={200: DefaultSuccess, codes_4xx: DefaultError},
+    url_name="brewswaps_cancel_claim",
+)
+@profile_required
+def cancel_claim(request, swap_id, claim_id):
+    try:
+        claim = SwapClaim.objects.get(id=claim_id)
+    except SwapClaim.DoesNotExist:
+        return 404, {"detail": f"Claim {claim_id} does not exist"}
+    if request.user != claim.creator:
+        return 403, {"detail": "You can't cancel someone elses claim. Maybe you meant to reject?"}
+
+    msg = claim.cancel()
     return 200, {"message": msg}
