@@ -62,10 +62,10 @@ class ServiceTestBase(ModelTestBase):
     def access_header(self):
         return {"Authorization": f"bearer {self.access}"}
     
-    def request_token_pair(self):
+    def request_token_pair(self, username, password):
         d = {
-            "username": self.username,
-            "password": self.password,
+            "username": username or self.username,
+            "password": password or self.password,
         }
         r = self.post(self.token_pair_url, data=d)
         self.assertEqual(r.status_code, codes.ok, r.json())
@@ -94,15 +94,22 @@ class ServiceTestBase(ModelTestBase):
 
         self._set_access_header(r.json())
 
-    def register_user(self):
+    def register_user(self, username=None, password=None, email=None, first=None, last=None):
+        user_details = {
+            "username": username or self.username,
+            "password": password or self.password,
+            "email": email or self.email,
+            "first_name": first or self.first_name,
+            "last_name": last or self.last_name,
+        }
         reg_url = reverse_lazy("api-1.0.0:users_register")
-        r = self.client.post(reg_url, data=self.user_details, content_type="application/json")
+        r = self.client.post(reg_url, data= user_details, content_type="application/json")
         self.assertEqual(r.status_code, codes.created)
         
         return r
     
-    def obtain_access_token(self):
-        token_r = self.request_token_pair()
+    def obtain_access_token(self, username=None, password=None):
+        token_r = self.request_token_pair(username, password)
         self.assertEqual(token_r.status_code, codes.ok, token_r.json())
 
         self._set_access_header(token_r.json())
