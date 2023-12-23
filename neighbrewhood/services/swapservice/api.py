@@ -70,8 +70,9 @@ def create_swap(request, swap: BrewSwapCreateSchema):
     url_name="brewswaps_swaps",
 )
 @profile_required
+@paginate
 def swaps(request):
-    return 200, BrewSwap.objects.all()
+    return BrewSwap.objects.all()
 
 @swap_router.get(
     "mySwaps",
@@ -80,8 +81,9 @@ def swaps(request):
     url_name="brewswaps_my_swaps",
 )
 @profile_required
+@paginate
 def my_swaps(request):
-    return 200, BrewSwap.objects.filter(creator=request.user).select_related("brew")
+    return BrewSwap.objects.filter(creator=request.user).select_related("brew")
 
 @swap_router.get(
     "nearbySwaps",
@@ -90,6 +92,7 @@ def my_swaps(request):
     url_name="brewswaps_nearby_swaps",
 )
 @profile_required
+@paginate
 def nearby_swaps(request, location: str = None, within: int = None):
     if location:
         try:
@@ -106,7 +109,7 @@ def nearby_swaps(request, location: str = None, within: int = None):
     query = query.filter(creator__brewer__location__distance_lte=(location, D(mi=within)))
     query = query.annotate(distance=Distance("creator__brewer__location", location)).order_by("distance")
     query = query.select_related("brew")
-    return 200, query
+    return query
 
 # Retrieve (detail)
 

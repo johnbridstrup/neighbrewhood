@@ -68,13 +68,13 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
         r = self.get(my_swaps_url)
         self.assertEqual(r.status_code, codes.ok)
-        self.assertEqual(len(r.json()), 1)
+        self.assertEqual(len(r.json()["items"]), 1)
 
         # SET ACTIVE
         swap = r.json()
 
         # Select a swap
-        det_url = swap[0]["detail"]["url"]
+        det_url = swap["items"][0]["detail"]["url"]
 
         # View the swap 
         r = self.get(det_url)
@@ -103,7 +103,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
         r = self.get(my_swaps_url)
         self.assertEqual(r.status_code, codes.ok)
-        self.assertEqual(len(r.json()), 1)
+        self.assertEqual(len(r.json()["items"]), 1)
         
         # Create swap for another user
         username_2 = "another_user"
@@ -122,7 +122,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
         r = self.get(my_swaps_url)
         self.assertEqual(r.status_code, codes.ok)
-        self.assertEqual(len(r.json()), 1)
+        self.assertEqual(len(r.json()["items"]), 1)
 
     def test_basic_swap_flow(self):
         r = self.create_brew()
@@ -175,13 +175,13 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         nearby_url = reverse_lazy("api-1.0.0:brewswaps_nearby_swaps")
         r = self.get(nearby_url)
         self.assertEqual(r.status_code, codes.ok)
-        nearby = len(r.json())
+        nearby = len(r.json()["items"])
 
         self.assertLess(nearby, total)
         self.assertGreater(nearby, 0)
 
         # Make a claim 0: Choose a swap
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         claim_url = r.json()["actions"]["make_claim"]["url"]
         claim_schema = r.json()["actions"]["make_claim"]["schema"]
@@ -217,10 +217,10 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         # View my swaps
         my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
         r = self.get(my_swaps_url)
-        self.assertEqual(r.json()[0]["claims"], 1)
+        self.assertEqual(r.json()["items"][0]["claims"], 1)
 
         # Get detail for one of them
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         
         # See claims
@@ -269,7 +269,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.assertEqual(r.status_code, codes.ok)
 
         # Choose and claim
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         claim_url = r.json()["actions"]["make_claim"]["url"]
 
@@ -287,9 +287,9 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.obtain_access_token()
         my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
         r = self.get(my_swaps_url)
-        self.assertEqual(r.json()[0]["claims"], 1)
+        self.assertEqual(r.json()["items"][0]["claims"], 1)
 
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         
         get_claims_url = r.json()["actions"]["get_claims"]["url"]
@@ -314,7 +314,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.assertEqual(r.status_code, codes.ok)
 
         # Choose and claim
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         claim_url = r.json()["actions"]["make_claim"]["url"]
 
@@ -360,7 +360,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.assertEqual(r.status_code, codes.ok)
 
         # Choose and claim
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         claim_url = r.json()["actions"]["make_claim"]["url"]
 
@@ -388,7 +388,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.assertEqual(r.status_code, codes.ok)
 
         # Choose and claim
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         claim_url = r.json()["actions"]["make_claim"]["url"]
 
@@ -405,9 +405,9 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.obtain_access_token()
         my_swaps_url = reverse_lazy("api-1.0.0:brewswaps_my_swaps")
         r = self.get(my_swaps_url)
-        self.assertEqual(r.json()[0]["claims"], 2)
+        self.assertEqual(r.json()["items"][0]["claims"], 2)
 
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         get_claims_url = r.json()["actions"]["get_claims"]["url"]
         r = self.get(get_claims_url)
@@ -452,7 +452,7 @@ class BrewSwapServiceTestCase(ServiceTestBase):
         self.assertEqual(r.status_code, codes.ok)
 
         # Choose and claim
-        det_url = r.json()[0]["detail"]["url"]
+        det_url = r.json()["items"][0]["detail"]["url"]
         r = self.get(det_url)
         claim_url = r.json()["actions"]["make_claim"]["url"]
 
