@@ -2,6 +2,7 @@ from ninja import Router
 from ninja.pagination import paginate
 from ninja.responses import codes_4xx
 from ninja_jwt.authentication import JWTAuth
+from typing import List
 from brewswaps.models import (
     ClaimStatusChoices,
     SwapClaim,
@@ -72,3 +73,15 @@ def cancel_claim(request, claim_id):
         return 404, {"detail": f"Claim {claim_id} does not exist"}
 
     return 200, claim
+
+@claims_router.get(
+    "user/myClaims",
+    auth=JWTAuth(),
+    response=List[SwapClaimResponseSchema],
+    url_name="claims_my_claims",
+)
+@profile_required
+@paginate
+def my_claims(request):
+    claims = SwapClaim.objects.filter(creator=request.user)
+    return claims

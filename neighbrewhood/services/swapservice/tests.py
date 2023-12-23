@@ -199,11 +199,17 @@ class BrewSwapServiceTestCase(ServiceTestBase):
             jsonschema.validate(claim_data, claim_schema)
         except jsonschema.ValidationError as e:
             assert False, str(e)
-
+        
         r = self.post(claim_url, claim_data)
 
         self.assertEqual(r.status_code, codes.created)
         self.assertEqual(r.json()["status"], ClaimStatusChoices.PENDING)
+
+        # See my claims
+        myclaims_url = reverse_lazy("api-1.0.0:claims_my_claims")
+        r = self.get(myclaims_url)
+        self.assertEqual(r.status_code, codes.ok)
+        self.assertEqual(len(r.json()["items"]), 1)
 
         # Orig user views and accepts swap
         self.obtain_access_token()
