@@ -8,6 +8,7 @@ from brewswaps.models import (
 )
 from common.schemas import DefaultError, DefaultSuccess
 from services.common.brewers_api import profile_required
+from services.swapservice.schemas import SwapClaimResponseSchema
 
 
 claims_router = Router(tags=["Brewers", "Claims"])
@@ -56,3 +57,18 @@ def cancel_claim(request, claim_id):
 
     msg = claim.cancel()
     return 200, {"message": msg}
+
+@claims_router.get(
+    "{claim_id}",
+    auth=JWTAuth(),
+    response={200: SwapClaimResponseSchema, codes_4xx: DefaultError},
+    url_name="claims_claim_detail",
+)
+@profile_required
+def cancel_claim(request, claim_id):
+    try:
+        claim = SwapClaim.objects.get(id=claim_id)
+    except SwapClaim.DoesNotExist:
+        return 404, {"detail": f"Claim {claim_id} does not exist"}
+
+    return 200, claim
