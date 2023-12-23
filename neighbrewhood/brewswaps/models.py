@@ -67,7 +67,7 @@ class BrewSwap(CommonInfo):
 
 class SwapClaim(CommonInfo):
     brew = models.OneToOneField(Brew, on_delete=models.CASCADE)
-    swap = models.ForeignKey(BrewSwap, on_delete=models.SET_NULL, null=True, blank=True, related_name="claims")
+    swap = models.ForeignKey(BrewSwap, on_delete=models.CASCADE, related_name="claims")
     num_bottles = models.IntegerField()
     status = models.TextField(choices=ClaimStatusChoices.choices, default=ClaimStatusChoices.PENDING)
 

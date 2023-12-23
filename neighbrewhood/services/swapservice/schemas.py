@@ -1,5 +1,5 @@
 from typing import Dict
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from ninja import ModelSchema
 
 from brewswaps.models import BrewSwap, SwapClaim
@@ -85,7 +85,7 @@ class BrewSwapDetailResponseSchema(BrewSwapResponseSchema):
         return ret
     
 
-## Claims
+## Claims. These are pretty coupled with brewswap schemas, so i guess they stay here until im smarter.
     
 class SwapClaimCreateSchema(ModelSchema):
     brew: int
@@ -108,12 +108,12 @@ class SwapClaimResponseSchema(ModelSchema):
     def resolve_actions(obj, context):
         request = context["request"]
         if request.user != obj.creator:
-            accept_url = reverse_lazy("api-1.0.0:brewswaps_accept_claim", args=[obj.swap.id, obj.id])
+            accept_url = reverse_lazy("api-1.0.0:claims_accept_claim", args=[obj.id])
             return {
                 "accept": make_action(HttpMethod.GET, str(accept_url))
             }
         else:
-            cancel_url = reverse_lazy("api-1.0.0:brewswaps_cancel_claim", args=[obj.swap.id, obj.id])
+            cancel_url = reverse_lazy("api-1.0.0:claims_cancel_claim", args=[obj.id])
             return {
                 "cancel": make_action(HttpMethod.GET, str(cancel_url))
             }
